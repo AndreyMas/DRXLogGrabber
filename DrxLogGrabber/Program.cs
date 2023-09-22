@@ -46,13 +46,20 @@ namespace DrxLogGrabber
                 {
                     foreach (var service in _config.Services)
                     {
-                        var isDirectoryLog = Directory.Exists(Path.Combine(logPath, service));
+                        var serviceDirectories = Directory.GetDirectories(logPath, "*" + service + "*").ToList();
+                        var isDirectoryLog = serviceDirectories.Count > 0;
+
+                        Console.WriteLine($"{logPath} : {service} : " + (isDirectoryLog ? "directory" : "root"));
                         if (isDirectoryLog)
                         {
-                            var fileMask = $"*{date}*.log";
-                            var files = Directory.GetFiles(Path.Combine(logPath, service), fileMask).ToList();
-                            if (files.Count > 0)
-                                logFiles.AddRange(files);
+                            foreach (var serviceDirectory in serviceDirectories)
+                            {
+                                Console.WriteLine("Folder: " + serviceDirectory);
+                                var fileMask = $"*{date}*.log";
+                                var files = Directory.GetFiles(serviceDirectory, fileMask).ToList();
+                                if (files.Count > 0)
+                                    logFiles.AddRange(files);
+                            }
                         }
                         else
                         {
@@ -69,15 +76,18 @@ namespace DrxLogGrabber
                 Console.WriteLine(ex.ToString());
             }
 
+            var fileName = Path.Combine(_config.OutputPath, $"logs_{enter}.zip");
             try
             {
-                var fileName = Path.Combine(_config.OutputPath, $"logs_{enter}.zip");
                 CreateZip(fileName, logFiles.Distinct().ToList());
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
+
+            Console.WriteLine($"Done: {fileName}. Press Enter");
+            Console.ReadLine();
         }
 
         static void Init()
@@ -95,7 +105,7 @@ namespace DrxLogGrabber
                 _config.Services = new List<string>();
                 _config.Services.Add("GenericService");
                 _config.Services.Add("IntegrationService");
-                _config.Services.Add("WevServer");
+                _config.Services.Add("WebServer");
                 _config.Services.Add("WorkflowProcessService");
                 _config.Services.Add("WorkflowBlockService");
                 _config.Services.Add("Worker");
@@ -111,10 +121,16 @@ namespace DrxLogGrabber
 
         static void CreateZip(string fileName, List<string> files)
         {
+            if (File.Exists(fileName))
+                File.Delete(fileName);
+
             using (var zip = ZipFile.Open(fileName, ZipArchiveMode.Create))
             {
                 foreach (var file in files)
+                {
                     zip.CreateEntryFromFile(file, Path.GetFileName(file), CompressionLevel.Optimal);
+                    Console.WriteLine("Add to zip : " + file);
+                }
             }
         }
     }
