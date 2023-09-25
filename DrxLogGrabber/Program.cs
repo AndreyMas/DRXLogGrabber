@@ -128,8 +128,15 @@ namespace DrxLogGrabber
             {
                 foreach (var file in files)
                 {
-                    zip.CreateEntryFromFile(file, Path.GetFileName(file), CompressionLevel.Optimal);
-                    Console.WriteLine("Add to zip : " + file);
+                    try
+                    {
+                        zip.CreateEntryFromFile(file, Path.GetFileName(file), CompressionLevel.Optimal);
+                        Console.WriteLine("Add to zip : " + file);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
                 }
             }
         }
